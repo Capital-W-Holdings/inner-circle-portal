@@ -1,0 +1,353 @@
+// Prisma Schema for Inner Circle Partners Portal
+// Database: PlanetScale (MySQL-compatible)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma" // Required for PlanetScale
+}
+
+// ============================================
+// Partner Model
+// ============================================
+
+model Partner {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  referralCode String        @unique @map("referral_code")
+  status       PartnerStatus @default(PENDING)
+  tier         PartnerTier   @default(STANDARD)
+  
+  // Profile
+  phone        String?
+  company      String?
+  website      String?
+  bio          String?       @db.Text
+  avatarUrl    String?       @map("avatar_url")
+  
+  // Settings
+  emailDigest  Boolean       @default(true) @map("email_digest")
+  timezone     String        @default("America/New_York")
+  
+  // Timestamps
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  campaigns    Campaign[]
+  referrals    Referral[]
+  payouts      Payout[]
+  milestones   Milestone[]
+  notifications Notification[]
+  
+  @@index([email])
+  @@index([referralCode])
+  @@index([status])
+  @@index([tier])
+  @@map("partners")
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum PartnerTier {
+  STANDARD
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+// ============================================
+// Campaign Model
+// ============================================
+
+model Campaign {
+  id         String         @id @default(cuid())
+  partnerId  String         @map("partner_id")
+  name       String
+  source     CampaignSource
+  slug       String
+  isActive   Boolean        @default(true) @map("is_active")
+  
+  // Stats (denormalized for performance)
+  clicks     Int            @default(0)
+  conversions Int           @default(0)
+  revenue    Int            @default(0) // in cents
+  
+  // Timestamps
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  partner    Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  referrals  Referral[]
+  clicks_log ClickEvent[]
+  
+  @@unique([partnerId, slug])
+  @@index([partnerId])
+  @@index([source])
+  @@map("campaigns")
+}
+
+enum CampaignSource {
+  LINKEDIN
+  TWITTER
+  FACEBOOK
+  EMAIL
+  SMS
+  WHATSAPP
+  WEBSITE
+  OTHER
+}
+
+// ============================================
+// Referral Model
+// ============================================
+
+model Referral {
+  id          String        @id @default(cuid())
+  partnerId   String        @map("partner_id")
+  campaignId  String?       @map("campaign_id")
+  status      ReferralStatus @default(PENDING)
+  
+  // Customer info (anonymized)
+  customerHash String       @map("customer_hash") // Hash of email for deduplication
+  
+  // Commission
+  commissionCents Int       @default(0) @map("commission_cents")
+  commissionRate  Float     @map("commission_rate")
+  
+  // Timestamps
+  clickedAt   DateTime?     @map("clicked_at")
+  convertedAt DateTime?     @map("converted_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  partner     Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  campaign    Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  payout      Payout?       @relation(fields: [payoutId], references: [id])
+  payoutId    String?       @map("payout_id")
+  
+  @@index([partnerId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([customerHash])
+  @@map("referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================
+// Click Event Model (for analytics)
+// ============================================
+
+model ClickEvent {
+  id         String   @id @default(cuid())
+  campaignId String   @map("campaign_id")
+  
+  // Tracking
+  ipHash     String   @map("ip_hash")
+  userAgent  String?  @map("user_agent") @db.Text
+  referer    String?  @db.Text
+  country    String?
+  city       String?
+  device     String?
+  
+  // Timestamps
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@index([campaignId])
+  @@index([createdAt])
+  @@map("click_events")
+}
+
+// ============================================
+// Payout Model
+// ============================================
+
+model Payout {
+  id           String       @id @default(cuid())
+  partnerId    String       @map("partner_id")
+  status       PayoutStatus @default(PENDING)
+  
+  // Amount
+  amountCents  Int          @map("amount_cents")
+  feeCents     Int          @default(0) @map("fee_cents")
+  netCents     Int          @map("net_cents")
+  
+  // Payment details
+  paymentMethod String?     @map("payment_method")
+  transactionId String?     @map("transaction_id")
+  
+  // Timestamps
+  requestedAt  DateTime     @default(now()) @map("requested_at")
+  processedAt  DateTime?    @map("processed_at")
+  completedAt  DateTime?    @map("completed_at")
+  
+  // Relations
+  partner      Partner      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  referrals    Referral[]
+  
+  @@index([partnerId])
+  @@index([status])
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============================================
+// Milestone Model
+// ============================================
+
+model Milestone {
+  id               String        @id @default(cuid())
+  partnerId        String        @map("partner_id")
+  type             MilestoneType
+  
+  // Display
+  title            String
+  description      String?
+  
+  // Celebration
+  celebrationShown Boolean       @default(false) @map("celebration_shown")
+  
+  // Timestamps
+  achievedAt       DateTime      @default(now()) @map("achieved_at")
+  
+  // Relations
+  partner          Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  @@unique([partnerId, type])
+  @@index([partnerId])
+  @@map("milestones")
+}
+
+enum MilestoneType {
+  FIRST_SHARE
+  FIRST_CLICK
+  FIRST_CONVERSION
+  TENTH_CONVERSION
+  HUNDRED_CONVERSION
+  THOUSAND_EARNED
+  TEN_THOUSAND_EARNED
+  TIER_UPGRADE
+}
+
+// ============================================
+// Notification Model
+// ============================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  partnerId String           @map("partner_id")
+  type      NotificationType
+  
+  // Content
+  title     String
+  message   String           @db.Text
+  link      String?
+  
+  // Status
+  read      Boolean          @default(false)
+  
+  // Timestamps
+  createdAt DateTime         @default(now()) @map("created_at")
+  readAt    DateTime?        @map("read_at")
+  
+  // Relations
+  partner   Partner          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  @@index([partnerId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  CONVERSION
+  PAYOUT
+  MILESTONE
+  CAMPAIGN
+  SYSTEM
+  PROMOTION
+}
+
+// ============================================
+// Experiment Model (A/B Testing)
+// ============================================
+
+model Experiment {
+  id          String           @id @default(cuid())
+  name        String
+  description String?          @db.Text
+  status      ExperimentStatus @default(DRAFT)
+  
+  // Configuration
+  variants    Json             // Array of variant configs
+  targetRatio Float            @default(0.5) @map("target_ratio")
+  
+  // Timestamps
+  startedAt   DateTime?        @map("started_at")
+  endedAt     DateTime?        @map("ended_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  
+  // Relations
+  results     ExperimentResult[]
+  
+  @@index([status])
+  @@map("experiments")
+}
+
+enum ExperimentStatus {
+  DRAFT
+  RUNNING
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+model ExperimentResult {
+  id           String     @id @default(cuid())
+  experimentId String     @map("experiment_id")
+  variant      String
+  
+  // Metrics
+  impressions  Int        @default(0)
+  clicks       Int        @default(0)
+  conversions  Int        @default(0)
+  
+  // Timestamps
+  recordedAt   DateTime   @default(now()) @map("recorded_at")
+  
+  // Relations
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  
+  @@index([experimentId])
+  @@map("experiment_results")
+}
