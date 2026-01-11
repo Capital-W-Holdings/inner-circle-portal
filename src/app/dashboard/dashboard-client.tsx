@@ -60,7 +60,7 @@ interface StatsDetailModalProps {
   analytics: { daily?: Array<{ date: string; earnings: number; conversions: number; clicks: number }> } | null;
 }
 
-function StatsDetailModal({ isOpen, onClose, type, stats, analytics }: StatsDetailModalProps): React.ReactElement | null {
+function StatsDetailModal({ isOpen, onClose, type, stats, analytics: _analytics }: StatsDetailModalProps): React.ReactElement | null {
   if (!isOpen || !type) return null;
 
   const modalContent: Record<NonNullable<StatsModalType>, { title: string; icon: string; content: React.ReactNode }> = {
