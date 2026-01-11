@@ -33,6 +33,36 @@ interface DashboardClientProps {
   user: DashboardUser;
 }
 
+// ============================================
+// Company Data
+// ============================================
+
+interface Company {
+  id: string;
+  name: string;
+  slug: string;
+  website: string;
+  logo?: string;
+  primaryColor: string;
+  commissionRate: number;
+  description: string;
+}
+
+const DEFAULT_COMPANY: Company = {
+  id: 'dfx',
+  name: 'DFX',
+  slug: 'dfx',
+  website: 'https://www.uedfx.com',
+  primaryColor: '#6366f1',
+  commissionRate: 15,
+  description: 'Deal Flow Xchange - Capital marketplace for private deals',
+};
+
+const COMPANIES: Company[] = [
+  DEFAULT_COMPANY,
+  // Add more companies here as needed
+];
+
 type StatsModalType = 'earnings' | 'payout' | 'referrals' | 'conversion' | null;
 
 // ============================================
@@ -59,9 +89,10 @@ interface StatsDetailModalProps {
   type: StatsModalType;
   stats: PartnerStats | null;
   analytics: { daily?: Array<{ date: string; earnings: number; conversions: number; clicks: number }> } | null;
+  company: Company;
 }
 
-function StatsDetailModal({ isOpen, onClose, type, stats, analytics: _analytics }: StatsDetailModalProps): React.ReactElement | null {
+function StatsDetailModal({ isOpen, onClose, type, stats, analytics: _analytics, company }: StatsDetailModalProps): React.ReactElement | null {
   if (!isOpen || !type) return null;
 
   const modalContent: Record<NonNullable<StatsModalType>, { title: string; icon: string; content: React.ReactNode }> = {
@@ -90,8 +121,8 @@ function StatsDetailModal({ isOpen, onClose, type, stats, analytics: _analytics 
             </div>
           </div>
           <div className="bg-indigo-50 rounded-lg p-4">
-            <h4 className="font-semibold text-indigo-900">Commission Rate</h4>
-            <p className="text-2xl font-bold text-indigo-600 mt-1">15%</p>
+            <h4 className="font-semibold text-indigo-900">Commission Rate for {company.name}</h4>
+            <p className="text-2xl font-bold text-indigo-600 mt-1">{company.commissionRate}%</p>
             <p className="text-sm text-indigo-700 mt-1">Standard tier rate. Upgrade to earn more!</p>
           </div>
         </div>
@@ -271,6 +302,8 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
   const [selectedCampaignUrl, setSelectedCampaignUrl] = useState<string>('');
   const [selectedCampaignName, setSelectedCampaignName] = useState<string>('');
   const [statsModalType, setStatsModalType] = useState<StatsModalType>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company>(DEFAULT_COMPANY);
+  const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
 
   // Partner ID
   const partnerId = user.partnerId ?? user.id;
@@ -328,8 +361,64 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold text-gray-900">
-                DFX RMS
+                RMS
               </h1>
+
+              {/* Company Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <span className="font-medium text-gray-700">{selectedCompany.name}</span>
+                  <svg
+                    className={cn("w-4 h-4 text-gray-500 transition-transform", companyDropdownOpen && "rotate-180")}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {companyDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setCompanyDropdownOpen(false)}
+                    />
+                    <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden">
+                      <div className="p-2">
+                        <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Your Companies</p>
+                        {COMPANIES.map((company) => (
+                          <button
+                            key={company.id}
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setCompanyDropdownOpen(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-3 py-2 rounded-lg transition-colors",
+                              selectedCompany.id === company.id
+                                ? "bg-indigo-50 text-indigo-700"
+                                : "hover:bg-gray-50 text-gray-700"
+                            )}
+                          >
+                            <div className="font-medium">{company.name}</div>
+                            <div className="text-xs text-gray-500">{company.description}</div>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="border-t border-gray-200 p-2">
+                        <button className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                          + Add Another Company
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {user.role === 'ADMIN' && (
                 <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
                   Admin
@@ -751,11 +840,14 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>DFX RMS • v1.0.0</p>
+          <p>RMS • v1.0.0</p>
+          <p className="text-xs mt-1">
+            Currently viewing: <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{selectedCompany.name}</a>
+          </p>
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-2 text-primary-600 hover:text-primary-700 font-medium"
+            className="mt-2 text-indigo-600 hover:text-indigo-700 font-medium"
           >
             Sign Out
           </button>
@@ -777,6 +869,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
         type={statsModalType}
         stats={stats ?? null}
         analytics={analytics}
+        company={selectedCompany}
       />
     </div>
   );

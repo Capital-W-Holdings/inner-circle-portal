@@ -4,13 +4,13 @@ import { Providers } from '@/components/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'DFX RMS - Referral Management System',
-  description: 'Partner Referral Management System',
+  title: 'RMS - Referral Management System',
+  description: 'Multi-Company Partner Referral Management System',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'DFX RMS',
+    title: 'RMS',
   },
   formatDetection: {
     telephone: false,

@@ -43,12 +43,13 @@ function LandingPage(): React.ReactElement {
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
       {/* Hero Section */}
       <header className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-          DFX RMS
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+          RMS
         </h1>
+        <p className="text-lg text-indigo-600 font-semibold mb-4">Referral Management System</p>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Join our partner program and earn commissions for every successful referral.
-          Track your earnings, manage campaigns, and grow your network.
+          Partner with multiple companies, track your referrals, and earn commissions.
+          Manage all your affiliate programs in one place.
         </p>
         <div className="flex gap-4 justify-center">
           <a
@@ -130,7 +131,7 @@ function LandingPage(): React.ReactElement {
             Ready to Start Earning?
           </h2>
           <p className="text-primary-100 mb-6">
-            Join thousands of partners already earning with DFX RMS.
+            Join thousands of partners already earning with RMS.
           </p>
           <a
             href="/sign-up"
@@ -143,7 +144,7 @@ function LandingPage(): React.ReactElement {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
-        <p>© 2025 DFX RMS. All rights reserved.</p>
+        <p>© 2025 RMS - Referral Management System. All rights reserved.</p>
       </footer>
     </div>
   );
