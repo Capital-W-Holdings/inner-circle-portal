@@ -15,7 +15,7 @@ export default function SignInPage(): React.ReactElement {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Inner Circle Partners
+            DFX RMS
           </h1>
           <p className="text-gray-600 mt-2">
             Sign in to access your partner dashboard

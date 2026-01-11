@@ -4,13 +4,13 @@ import { Providers } from '@/components/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Inner Circle Partners Portal',
+  title: 'DFX RMS - Referral Management System',
   description: 'Partner Referral Management System',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Inner Circle',
+    title: 'DFX RMS',
   },
   formatDetection: {
     telephone: false,

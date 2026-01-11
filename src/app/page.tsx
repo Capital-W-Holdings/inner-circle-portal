@@ -44,7 +44,7 @@ function LandingPage(): React.ReactElement {
       {/* Hero Section */}
       <header className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-          Inner Circle Partners
+          DFX RMS
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
           Join our partner program and earn commissions for every successful referral.
@@ -130,7 +130,7 @@ function LandingPage(): React.ReactElement {
             Ready to Start Earning?
           </h2>
           <p className="text-primary-100 mb-6">
-            Join thousands of partners already earning with Inner Circle.
+            Join thousands of partners already earning with DFX RMS.
           </p>
           <a
             href="/sign-up"
@@ -143,7 +143,7 @@ function LandingPage(): React.ReactElement {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
-        <p>© 2024 Inner Circle Partners. All rights reserved.</p>
+        <p>© 2025 DFX RMS. All rights reserved.</p>
       </footer>
     </div>
   );
