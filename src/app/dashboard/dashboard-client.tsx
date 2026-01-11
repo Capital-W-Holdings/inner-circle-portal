@@ -190,10 +190,10 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
               onClick={() => setActiveTab(tab.key)}
               className={cn(
                 'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500',
+                'focus:outline-none focus:ring-2 focus:ring-indigo-500',
                 activeTab === tab.key
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-primary-300'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300'
               )}
             >
               <span className="mr-2">{tab.icon}</span>
