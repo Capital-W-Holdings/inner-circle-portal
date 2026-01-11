@@ -148,14 +148,15 @@ export function canAccessPartnerData(
   partnerId: string
 ): boolean {
   if (!user) return false;
-  
+
   // Admins can access all partner data
   if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
     return true;
   }
-  
-  // Partners can only access their own data
-  return user.partnerId === partnerId;
+
+  // Partners can access their own data via partnerId or user id
+  // (user.id is used as fallback partnerId for new users without explicit partnerId)
+  return user.partnerId === partnerId || user.id === partnerId;
 }
 
 /**
