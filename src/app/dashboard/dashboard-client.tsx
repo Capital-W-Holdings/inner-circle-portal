@@ -39,13 +39,14 @@ type StatsModalType = 'earnings' | 'payout' | 'referrals' | 'conversion' | null;
 // Tab Types
 // ============================================
 
-type TabKey = 'overview' | 'analytics' | 'share' | 'campaigns';
+type TabKey = 'overview' | 'analytics' | 'share' | 'campaigns' | 'settings';
 
 const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: 'overview', label: 'Overview', icon: '📊' },
   { key: 'analytics', label: 'Analytics', icon: '📈' },
   { key: 'share', label: 'Share', icon: '📤' },
   { key: 'campaigns', label: 'Campaigns', icon: '🎯' },
+  { key: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 
 // ============================================
@@ -595,6 +596,155 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
                 onShowQR={handleShowQR}
                 isCreating={isCreating}
               />
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Profile Information
+                </h2>
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    {user.imageUrl ? (
+                      <img
+                        src={user.imageUrl}
+                        alt={user.name}
+                        className="w-20 h-20 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-indigo-600">
+                          {user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <input
+                        type="text"
+                        defaultValue={user.name}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        defaultValue={user.email}
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Email cannot be changed here. Manage in Clerk settings.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Partner ID</label>
+                      <input
+                        type="text"
+                        value={partnerId}
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Settings */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Payment Settings
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                      <option>Bank Transfer (ACH)</option>
+                      <option>PayPal</option>
+                      <option>Stripe Connect</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Payout Threshold</label>
+                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                      <option>$50 (Default)</option>
+                      <option>$100</option>
+                      <option>$250</option>
+                      <option>$500</option>
+                    </select>
+                  </div>
+                  <div className="pt-4 border-t border-gray-200">
+                    <button className="text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+                      + Connect Stripe Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Notification Preferences
+                </h2>
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Email Notifications</p>
+                      <p className="text-sm text-gray-500">Receive emails about new conversions</p>
+                    </div>
+                    <input type="checkbox" defaultChecked className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Payout Alerts</p>
+                      <p className="text-sm text-gray-500">Get notified when payouts are processed</p>
+                    </div>
+                    <input type="checkbox" defaultChecked className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Weekly Summary</p>
+                      <p className="text-sm text-gray-500">Weekly digest of your referral performance</p>
+                    </div>
+                    <input type="checkbox" defaultChecked className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Marketing Updates</p>
+                      <p className="text-sm text-gray-500">Tips and news about the partner program</p>
+                    </div>
+                    <input type="checkbox" className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-6">
+                <h2 className="text-lg font-semibold text-red-600 mb-4">
+                  Danger Zone
+                </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Delete Account</p>
+                      <p className="text-sm text-gray-500">Permanently delete your partner account and all data</p>
+                    </div>
+                    <button className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
