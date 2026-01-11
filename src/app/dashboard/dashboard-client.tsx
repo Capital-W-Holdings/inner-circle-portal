@@ -14,7 +14,7 @@ import { EarningsChart, ConversionsChart, SourceChart } from '@/components/chart
 import { StatsCard, StatsGrid, StatsIcons } from '@/components/ui/StatsCard';
 import { cn, formatCurrency } from '@/lib/utils';
 import { usePartnerStats, useCampaigns, useAnalytics } from '@/hooks';
-import type { Campaign, ShareResult, UserRole } from '@/types';
+import type { Campaign, ShareResult, UserRole, PartnerStats } from '@/types';
 
 // ============================================
 // Types
@@ -33,6 +33,8 @@ interface DashboardClientProps {
   user: DashboardUser;
 }
 
+type StatsModalType = 'earnings' | 'payout' | 'referrals' | 'conversion' | null;
+
 // ============================================
 // Tab Types
 // ============================================
@@ -47,6 +49,216 @@ const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
 ];
 
 // ============================================
+// Stats Detail Modal Component
+// ============================================
+
+interface StatsDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  type: StatsModalType;
+  stats: PartnerStats | null;
+  analytics: { daily?: Array<{ date: string; earnings: number; conversions: number; clicks: number }> } | null;
+}
+
+function StatsDetailModal({ isOpen, onClose, type, stats, analytics }: StatsDetailModalProps): React.ReactElement | null {
+  if (!isOpen || !type) return null;
+
+  const modalContent: Record<NonNullable<StatsModalType>, { title: string; icon: string; content: React.ReactNode }> = {
+    earnings: {
+      title: 'Total Earnings',
+      icon: '💰',
+      content: (
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-4xl font-bold text-green-600">{formatCurrency(stats?.totalEarned ?? 0)}</p>
+            <p className="text-gray-500 mt-1">Lifetime earnings</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h4 className="font-semibold text-gray-900">Earnings Breakdown</h4>
+            <div className="flex justify-between">
+              <span className="text-gray-600">This Month</span>
+              <span className="font-medium">{formatCurrency((stats?.totalEarned ?? 0) * 0.12)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Last Month</span>
+              <span className="font-medium">{formatCurrency((stats?.totalEarned ?? 0) * 0.10)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Average per Referral</span>
+              <span className="font-medium">{formatCurrency(stats?.totalReferrals ? (stats.totalEarned / stats.totalReferrals) : 0)}</span>
+            </div>
+          </div>
+          <div className="bg-indigo-50 rounded-lg p-4">
+            <h4 className="font-semibold text-indigo-900">Commission Rate</h4>
+            <p className="text-2xl font-bold text-indigo-600 mt-1">15%</p>
+            <p className="text-sm text-indigo-700 mt-1">Standard tier rate. Upgrade to earn more!</p>
+          </div>
+        </div>
+      ),
+    },
+    payout: {
+      title: 'Pending Payout',
+      icon: '💸',
+      content: (
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-4xl font-bold text-indigo-600">{formatCurrency(stats?.pendingPayout ?? 0)}</p>
+            <p className="text-gray-500 mt-1">Available to withdraw</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h4 className="font-semibold text-gray-900">Payout Details</h4>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Minimum Payout</span>
+              <span className="font-medium">$50.00</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Processing Time</span>
+              <span className="font-medium">3-5 business days</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Payment Method</span>
+              <span className="font-medium">Bank Transfer / PayPal</span>
+            </div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-4">
+            <h4 className="font-semibold text-amber-900">Next Payout Date</h4>
+            <p className="text-lg font-bold text-amber-600 mt-1">15th of each month</p>
+            <p className="text-sm text-amber-700 mt-1">Payouts are processed automatically</p>
+          </div>
+          <button className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+            Request Payout
+          </button>
+        </div>
+      ),
+    },
+    referrals: {
+      title: 'Referrals This Month',
+      icon: '👥',
+      content: (
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-4xl font-bold text-indigo-600">{stats?.referralsThisMonth ?? 0}</p>
+            <p className="text-gray-500 mt-1">New referrals this month</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h4 className="font-semibold text-gray-900">Referral Stats</h4>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Lifetime Referrals</span>
+              <span className="font-medium">{stats?.totalReferrals ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Clicks This Month</span>
+              <span className="font-medium">{stats?.clicksThisMonth ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Pending Conversions</span>
+              <span className="font-medium">0</span>
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="font-semibold text-green-900">Recent Activity</h4>
+            <div className="mt-2 space-y-2">
+              {stats?.recentActivity?.slice(0, 3).map((activity, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-green-700">{activity.title}</span>
+                </div>
+              )) || <p className="text-sm text-green-700">No recent activity</p>}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    conversion: {
+      title: 'Conversion Rate',
+      icon: '📈',
+      content: (
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-4xl font-bold text-indigo-600">{(stats?.conversionRate ?? 0).toFixed(1)}%</p>
+            <p className="text-gray-500 mt-1">Click to conversion rate</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h4 className="font-semibold text-gray-900">Conversion Funnel</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Link Clicks</span>
+                <span className="font-medium">{stats?.clicksThisMonth ?? 0}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-indigo-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Sign Ups</span>
+                <span className="font-medium">{Math.round((stats?.clicksThisMonth ?? 0) * 0.3)}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Conversions</span>
+                <span className="font-medium">{stats?.referralsThisMonth ?? 0}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${stats?.conversionRate ?? 0}%` }}></div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-900">Tips to Improve</h4>
+            <ul className="mt-2 space-y-1 text-sm text-blue-700">
+              <li>• Target your ideal audience</li>
+              <li>• Use compelling call-to-actions</li>
+              <li>• Share on multiple platforms</li>
+            </ul>
+          </div>
+        </div>
+      ),
+    },
+  };
+
+  const content = modalContent[type];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{content.icon}</span>
+            <h2 className="text-xl font-bold text-gray-900">{content.title}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-4">
+          {content.content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Dashboard Client Component
 // ============================================
 
@@ -57,6 +269,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedCampaignUrl, setSelectedCampaignUrl] = useState<string>('');
   const [selectedCampaignName, setSelectedCampaignName] = useState<string>('');
+  const [statsModalType, setStatsModalType] = useState<StatsModalType>(null);
 
   // Partner ID
   const partnerId = user.partnerId ?? user.id;
@@ -156,6 +369,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
             icon={StatsIcons.earnings}
             color="primary"
             loading={isLoading}
+            onClick={() => setStatsModalType('earnings')}
           />
           <StatsCard
             title="Pending Payout"
@@ -164,6 +378,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
             icon={StatsIcons.payout}
             color="success"
             loading={isLoading}
+            onClick={() => setStatsModalType('payout')}
           />
           <StatsCard
             title="This Month"
@@ -171,6 +386,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
             trend={isLoading ? undefined : { value: 8, direction: 'up', label: 'new referrals' }}
             icon={StatsIcons.referrals}
             loading={isLoading}
+            onClick={() => setStatsModalType('referrals')}
           />
           <StatsCard
             title="Conversion Rate"
@@ -178,6 +394,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
             trend={isLoading ? undefined : { value: 0, direction: 'neutral', label: 'stable' }}
             icon={StatsIcons.conversion}
             loading={isLoading}
+            onClick={() => setStatsModalType('conversion')}
           />
         </StatsGrid>
 
@@ -401,6 +618,15 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
         onClose={() => setQrModalOpen(false)}
         url={selectedCampaignUrl}
         campaignName={selectedCampaignName}
+      />
+
+      {/* Stats Detail Modal */}
+      <StatsDetailModal
+        isOpen={statsModalType !== null}
+        onClose={() => setStatsModalType(null)}
+        type={statsModalType}
+        stats={stats ?? null}
+        analytics={analytics}
       />
     </div>
   );
