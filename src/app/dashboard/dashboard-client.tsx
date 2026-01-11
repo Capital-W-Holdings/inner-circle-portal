@@ -114,7 +114,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold text-gray-900">
-                Inner Circle Partners
+                DFX RMS
               </h1>
               {user.role === 'ADMIN' && (
                 <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
@@ -384,7 +384,7 @@ export function DashboardClient({ user }: DashboardClientProps): React.ReactElem
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Inner Circle Partners Portal • v1.0.0</p>
+          <p>DFX RMS • v1.0.0</p>
           <button
             type="button"
             onClick={handleSignOut}
